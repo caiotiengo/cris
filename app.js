@@ -4,7 +4,6 @@ import { OpenaiController } from "./app/controllers/openai-controller.js";
 import { CrisController } from "./app/controllers/cris-controller.js";
 import cors from "cors";
 import { WhatsappMiddleware } from "./app/middlewares/whatsapp-middleware.js";
-import { WhatsappController } from "./app/controllers/whatsapp-controller.js";
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -12,9 +11,9 @@ app.use(cors());
 const crisController = new CrisController();
 const openaiController = new OpenaiController();
 const whatsappMiddleware = new WhatsappMiddleware();
-const whatsappController = new WhatsappController();
 app.post('/webhook', async (req, res) => {
     const payload = req.body;
+    console.log(payload, 'payload');
     const message = whatsappMiddleware._handlePayloadMessage(payload);
     const threadId = await openaiController.createThreadWithAssistant().then((thread) => {return thread.id});
     const response = await whatsappMiddleware.handleWebhookPayload(payload, threadId);
@@ -29,13 +28,13 @@ app.post('/webhook', async (req, res) => {
         console.log('existing user');
         openaiController.addMessage(threadId, message).then( message => {
             console.log(message, 'message')
-            openaiController.runAssistant(threadId).then((response) =>{
-                console.log(response, 'response')
-               const runId = response.id;
-               const token = response.token;
+            openaiController.runAssistant(threadId).then((assistant_response) =>{
+                console.log(assistant_response, 'response')
+               const runId = assistant_response.id;
+               const token = assistant_response.token;
                openaiController.pollingInterval = setInterval(async () =>{
-                const response =  await openaiController.checkingStatus(res, threadId, runId, undefined,token);
-                if(response === 'completed'){
+                const status_response =  await openaiController.checkingStatus(res, threadId, runId, response.phoneNumber,token);
+                if(status_response === 'completed'){
                     clearInterval(openaiController.pollingInterval);
                 }
                }, 5000)

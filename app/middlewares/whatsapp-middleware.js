@@ -11,8 +11,8 @@ export class WhatsappMiddleware {
             body.entry[0].changes[0].value.messages[0]
         );
     }
+    
     handleWebhookPayload(body){
-
         return{
             phoneNumber: body.entry[0].changes[0].value.messages[0].from,
             message: body.entry[0].changes[0].value.messages[0].text.body
@@ -21,9 +21,11 @@ export class WhatsappMiddleware {
        console.log(body.entry[0].changes[0].value.messages[0].from, 'from')
          console.log(body.entry[0].changes[0].value.messages[0].to, 'to')
     }
-    _handlePayloadMessage(body){
+    _handlePayload(body){
         if(this.isValidWhatsAppMessage(body)){
             return this.checkMessageType(body.entry[0].changes[0].value.messages[0]);
+        }else if(this._handleDeliveryStatus(body)){
+            return this._handleDeliveryStatus(body);
         }
         return undefined;
     }

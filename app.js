@@ -13,10 +13,8 @@ const openaiController = new OpenaiController();
 const whatsappMiddleware = new WhatsappMiddleware();
 app.post('/webhook', async (req, res) => {
     const payload = req.body;
-    console.log(payload, 'payload');
-    const message = whatsappMiddleware._handlePayloadMessage(payload);
-    const threadId = await openaiController.createThreadWithAssistant().then((thread) => {return thread.id});
-    const response = await whatsappMiddleware.handleWebhookPayload(payload, threadId);
+    const payload_treated = whatsappMiddleware._handlePayload(payload);
+    const response = await whatsappMiddleware.handleWebhookPayload(payload);
     const userExists = await crisController.checkUserByPhone(response.phoneNumber);
     if(response && !userExists){
         console.log('Webhook payload processed:', response);
@@ -26,7 +24,8 @@ app.post('/webhook', async (req, res) => {
         !(whatsappMiddleware._handleDeliveryStatus(payload) === 'sent' || whatsappMiddleware._handleDeliveryStatus(payload) == 'delivered') 
         && userExists){
         console.log('existing user');
-        openaiController.addMessage(threadId, message).then( message => {
+        const threadId = await openaiController.createThreadWithAssistant().then((thread) => {return thread.id});
+        openaiController.addMessage(threadId, payload_treated).then( message => {
             console.log(message, 'message')
             openaiController.runAssistant(threadId).then((assistant_response) =>{
                 console.log(assistant_response, 'response')
